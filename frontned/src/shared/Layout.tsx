@@ -1,6 +1,6 @@
 import { Container, Nav, Navbar } from "react-bootstrap";
 import { Outlet } from "react-router-dom";
-import styles from "./Layout.module.css";
+import styles from "./Layout.module.scss";
 
 export default function Layout() {
   return (
