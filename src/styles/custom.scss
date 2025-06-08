@@ -1,0 +1,12 @@
+/* make the customizations */
+
+$body-bg: #3a3a3a;
+$body-color: #fff;
+$body-font-family: 'Intra';
+
+body {
+  font-family: 'Intra' !important;
+}
+
+/* import bootstrap to set changes */
+@import '~bootstrap/scss/bootstrap';
