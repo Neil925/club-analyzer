@@ -7,13 +7,17 @@
   "type": "module",
   "main": "main.ts",
   "scripts": {
-    "test": "node ."
+    "start": "node --env-file .env .",
+    "dev": "node --env-file .env --watch ."
   },
   "dependencies": {
+    "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
+    "cors": "^2.8.5",
     "express": "^5.1.0"
   },
   "devDependencies": {
+    "nodemon": "^3.1.10",
     "typescript": "^5.8.3"
   }
 }
