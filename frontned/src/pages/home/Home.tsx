@@ -1,31 +1,74 @@
-import { MouseEvent, useEffect, useMemo, useRef, useState } from "react";
+import { MouseEvent, useEffect, useState } from "react";
 import { Button, Container } from "react-bootstrap";
 import styles from "./Home.module.css";
-import { AxisOptions, Chart } from "react-charts";
+import { EventsPerMonth } from "../../components/EventsPerMonth";
+import { EventsPerClub } from "../../components/EventsPerClub";
+import { Cohosted } from "../../components/Cohosted";
 
 export default function Home() {
-  const codeRef = useRef<HTMLDivElement | null>(null);
   let [data, setData] = useState<Root | null>(null);
   let [eventsByMonth, setEventsByMonth] = useState<
     Record<string, number> | null
   >(null);
+  let [eventsByClub, setEventsByClub] = useState<Record<string, number> | null>(
+    null,
+  );
+  let [cohosted, setCohosted] = useState<Record<string, number> | null>(
+    null,
+  );
 
-  useEffect(() => {
-    if (!data) return;
-
+  const reloadEventsByMonth = () => {
     const counts: Record<string, number> = {};
 
-    for (const event of data.value) {
+    for (const event of data!.value) {
       const date = new Date(event.startsOn);
-      const month = `${date.getFullYear()}-${(date.getMonth() + 1)
+      const month = `${date.getFullYear()}-${
+        (date.getMonth() + 1)
           .toString()
           .padStart(2, "0")
-        }`; // Format like "2024-06"
+      }`; // Format like "2024-06"
 
       counts[month] = (counts[month] || 0) + 1;
     }
 
     setEventsByMonth(counts);
+  };
+
+  const reloadEventsByClub = () => {
+    const counts: Record<string, number> = {};
+
+    for (const event of data!.value) {
+      const clubs = event.organizationNames;
+
+      for (const club of clubs) {
+        counts[club] = (counts[club] || 0) + 1;
+      }
+    }
+
+    setEventsByClub(counts);
+  };
+
+  const reloadCohosted = () => {
+    const counts: Record<string, number> = {};
+
+    for (const event of data!.value) {
+      const clubs = event.organizationNames;
+
+      if (clubs.length == 1) continue;
+
+      for (const club of clubs) {
+        counts[club] = (counts[club] || 0) + 1;
+      }
+    }
+
+    setCohosted(counts);
+  };
+
+  useEffect(() => {
+    if (!data) return;
+    reloadEventsByMonth();
+    reloadEventsByClub();
+    reloadCohosted();
   }, [data]);
 
   const reloadData = async (ev: MouseEvent<HTMLButtonElement>) => {
@@ -35,7 +78,7 @@ export default function Home() {
     try {
       const body = {
         orderByField: "endsOn",
-        orderByDirection: "ascending",
+        orderByDirection: "descending",
         status: "Approved",
         take: "2147483647",
       };
@@ -45,10 +88,16 @@ export default function Home() {
         {
           method: "POST",
           body: JSON.stringify(body),
+          headers: [
+            ["Content-Type", "application/json"],
+          ],
         },
       );
 
-      setData(await response.json());
+      const json: Root = await response.json();
+      json.value.sort((a, b) => a.endsOn.localeCompare(b.endsOn));
+
+      setData(json);
     } catch (err) {
       console.error(err);
       alert("Something went wrong...");
@@ -73,7 +122,8 @@ export default function Home() {
         return;
       }
 
-      const events = await response.json();
+      const events: Root = await response.json();
+      events.value.sort((a, b) => a.endsOn.localeCompare(b.endsOn));
 
       setData(events);
     } catch (err) {
@@ -97,56 +147,11 @@ export default function Home() {
         Reload Data
       </Button>
       <div className={styles.code}>
-        <code id="code" ref={codeRef}>
-          {data && JSON.stringify(data.value)}
-        </code>
       </div>
-      {eventsByMonth && <Analysis eventsByMonth={eventsByMonth} />}
-    </Container>
-  );
-}
-
-function Analysis(
-  { eventsByMonth }: { eventsByMonth: Record<string, number> },
-) {
-  console.log(eventsByMonth);
-  type Event = {
-    date: Date;
-    count: number;
-  };
-
-  const data = useMemo(() => [
-    {
-      label: "Events",
-      data: Object.entries(eventsByMonth)
-        .map(([month, count]) => ({
-          date: new Date(month + "-01"), // parse to Date
-          count: count,
-        }))
-        .sort((a, b) => a.date.getTime() - b.date.getTime()),
-    },
-  ], []);
-
-  console.log(data);
-
-  const primaryAxis = useMemo((): AxisOptions<Event> => ({
-    getValue: (datum) => datum.date,
-    scaleType: "time",
-  }), []);
-
-  const secondaryAxis = useMemo((): AxisOptions<Event>[] => [
-    {
-      getValue: (datum: any) => datum.count,
-    },
-  ], []);
-
-  return (
-    <div>
       <h2>Analysis</h2>
-      <h3>Events Per Month</h3>
-      <div style={{ width: "600px", height: "300px" }}>
-        <Chart options={{ data, primaryAxis, secondaryAxes: secondaryAxis }} />
-      </div>
-    </div>
+      {eventsByMonth && <EventsPerMonth eventsByMonth={eventsByMonth} />}
+      {eventsByClub && <EventsPerClub eventsByClub={eventsByClub} />}
+      {cohosted && <Cohosted cohosted={cohosted} />}
+    </Container>
   );
 }

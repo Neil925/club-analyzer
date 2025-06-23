@@ -26,8 +26,10 @@ app.post("/reload", async (req, res) => {
       `https://valenciacollege.campuslabs.com/engage/api/discovery/event/search?${params}`,
     );
     let data = await response.json() as Root;
-    data = consolidateData(store.getData(), data);
-
+    if (store.fileExists()) {
+      data = consolidateData(store.getData(), data);
+    }
+    store.saveData(data);
     res.json(data);
   } catch (err) {
     console.error(err);

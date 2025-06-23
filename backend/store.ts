@@ -5,6 +5,8 @@ export const getData = (): Root => {
   return JSON.parse(text) as Root;
 };
 
+export const fileExists = (): boolean => fs.existsSync("./data.json");
+
 export const saveData = (data: Root) => {
   fs.writeFileSync("./data.json", JSON.stringify(data), { encoding: "utf8" });
 };
